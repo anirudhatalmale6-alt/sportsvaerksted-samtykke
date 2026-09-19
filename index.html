@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Samtykke til film og billeder - Sportsværkstedet</title>
+<style>
+  :root { color-scheme: light dark; --line:#cfd4da; --dim:#6b7280; --accent:#1a66d0;
+          --bad:#c0392b; --ok:#1f7a4d; --panel:#ffffff; --bg:#f4f5f7; --text:#15181c; }
+  @media (prefers-color-scheme: dark) {
+    :root { --panel:#181b20; --bg:#0f1115; --text:#e7e9ec; --line:#333941; --dim:#98a0ab; }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--text);
+         font:16px/1.6 -apple-system,"Segoe UI",Roboto,Arial,sans-serif; }
+  .wrap { max-width:720px; margin:0 auto; padding:18px 16px 80px; }
+  .demo { background:#fdf6e6; color:#5a4300; border-left:4px solid #d9a02b;
+          padding:12px 14px; border-radius:6px; margin-bottom:18px; font-size:14.5px; }
+  @media (prefers-color-scheme: dark) { .demo { background:#2b2410; color:#f0dfae; } }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:10px;
+          padding:18px 18px 20px; margin-bottom:16px; }
+  h1 { font-size:22px; margin:0 0 4px; }
+  h2 { font-size:15px; text-transform:uppercase; letter-spacing:.05em; color:var(--dim);
+       margin:0 0 12px; }
+  .who { color:var(--dim); font-size:14px; margin:0 0 18px; }
+  label.f { display:block; margin:0 0 12px; font-size:14px; color:var(--dim); }
+  label.f input, label.f select { display:block; width:100%; margin-top:4px;
+    padding:11px 12px; font:inherit; color:var(--text); background:var(--panel);
+    border:1px solid var(--line); border-radius:7px; }
+  label.f input:focus { outline:2px solid var(--accent); outline-offset:-1px; }
+  .two { display:flex; gap:12px; flex-wrap:wrap; }
+  .two > * { flex:1 1 220px; }
+  .terms { font-size:15px; }
+  .terms p { margin:0 0 10px; }
+  .tick { display:flex; gap:10px; align-items:flex-start; margin:0 0 10px;
+          padding:9px 11px; border:1px solid var(--line); border-radius:8px; }
+  .tick input { margin-top:3px; width:19px; height:19px; flex:0 0 19px; }
+  .tick span { font-size:15px; }
+  .pad { border:1px dashed var(--line); border-radius:8px; background:var(--panel);
+         touch-action:none; width:100%; height:190px; display:block; }
+  .padrow { display:flex; justify-content:space-between; align-items:center;
+            margin-top:6px; font-size:13px; color:var(--dim); }
+  button { font:inherit; padding:10px 16px; border-radius:8px; border:1px solid var(--line);
+           background:var(--panel); color:var(--text); cursor:pointer; }
+  button.primary { background:var(--accent); border-color:var(--accent); color:#fff;
+                   font-weight:600; padding:14px 20px; font-size:17px; width:100%; }
+  button:disabled { opacity:.5; cursor:default; }
+  .err { color:var(--bad); font-size:14px; margin:10px 0 0; }
+  .done { border-left:4px solid var(--ok); background:#eef8f2; color:#14532d;
+          padding:14px 16px; border-radius:6px; }
+  @media (prefers-color-scheme: dark) { .done { background:#10241a; color:#b7e4c7; } }
+  /* Not floated: on a phone the heading wraps around the buttons and reads
+     as though the words belong together. Own row, out of the way. */
+  .lang { display:flex; gap:8px; justify-content:flex-end; margin:0 0 10px; font-size:14px; }
+  .lang button { padding:5px 11px; font-size:14px; }
+  .lang button[aria-pressed="true"] { background:var(--accent); border-color:var(--accent);
+                                      color:#fff; font-weight:600; }
+  .small { font-size:13px; color:var(--dim); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="demo" id="demoNote"></div>
+
+  <div class="card">
+    <div class="lang">
+      <button id="btnDa" aria-pressed="true">Dansk</button>
+      <button id="btnEn" aria-pressed="false">English</button>
+    </div>
+    <h1 id="title"></h1>
+    <p class="who" id="who"></p>
+    <div class="terms" id="terms"></div>
+  </div>
+
+  <div class="card">
+    <h2 id="hUses"></h2>
+    <p class="small" id="usesHelp"></p>
+    <div id="uses"></div>
+  </div>
+
+  <div class="card">
+    <h2 id="hYou"></h2>
+    <div class="two">
+      <label class="f" id="lName">  <input type="text" id="name" autocomplete="name"></label>
+      <label class="f" id="lBirth"> <input type="date" id="birth"></label>
+    </div>
+    <div class="two">
+      <label class="f" id="lEmail"> <input type="email" id="email" autocomplete="email"></label>
+      <label class="f" id="lPhone"> <input type="tel" id="phone" autocomplete="tel"></label>
+    </div>
+    <div id="guardianBox" style="display:none">
+      <p class="small" id="guardianWhy"></p>
+      <div class="two">
+        <label class="f" id="lGName"><input type="text" id="gname"></label>
+        <label class="f" id="lGRel"> <input type="text" id="grel"></label>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2 id="hSign"></h2>
+    <p class="small" id="signHelp"></p>
+    <canvas class="pad" id="pad"></canvas>
+    <div class="padrow">
+      <span id="padHint"></span>
+      <button type="button" id="clear"></button>
+    </div>
+    <label class="tick" style="margin-top:14px">
+      <input type="checkbox" id="agree">
+      <span id="agreeText"></span>
+    </label>
+    <p class="err" id="err" hidden></p>
+    <p style="margin-top:14px"><button class="primary" id="send"></button></p>
+    <div id="done" class="done" hidden></div>
+  </div>
+
+  <p class="small" id="foot"></p>
+</div>
+
+<script src="jspdf.umd.min.js"></script>
+<script>
+// ---------------------------------------------------------------- wording
+// Kept in one place and used BOTH on screen and in the PDF. The PDF has to
+// carry the exact words the person was shown - a consent record that only
+// says "agreed" proves nothing about what they agreed to.
+const T = {
+  da: {
+    title: "Samtykke til brug af film og billeder",
+    who: "Dataansvarlig: Sportsværkstedet, Domhusgade 13, 1. sal, 6000 Kolding" +
+         "  ·  skriv@sportsvaerkstedet.dk",
+    terms: [
+      "Jeg giver Sportsværkstedet tilladelse til at optage video og tage billeder af mig i forbindelse med min behandling, og til at bruge materialet til markedsføring i de kanaler, jeg har sat kryds ved nedenfor.",
+      "Jeg er indforstået med, at optagelserne kan vise min krop, mine skader og selve behandlingen, og at jeg kan være genkendelig.",
+      "Samtykket er frivilligt, og jeg kan til enhver tid trække det tilbage ved at skrive til Sportsværkstedet. Herefter fjerner Sportsværkstedet materialet fra egne kanaler hurtigst muligt. Materiale, som andre allerede har delt eller hentet ned, kan ikke altid fjernes - det er jeg oplyst om.",
+      "Jeg modtager en kopi af denne erklæring på e-mail. Sportsværkstedet opbevarer den, så længe materialet er i brug, og i op til to år derefter.",
+      "Jeg kan bede om indsigt i, rettelse af eller sletning af mine oplysninger, og jeg kan klage til Datatilsynet."
+    ],
+    hUses: "Hvor må materialet bruges?",
+    usesHelp: "Sæt kryds ved det, du siger ja til. Du bestemmer selv - du kan sige ja til ét og nej til resten.",
+    uses: [
+      ["web",  "Sportsværkstedets hjemmeside"],
+      ["fb",   "Facebook"],
+      ["ig",   "Instagram"],
+      ["yt",   "YouTube og TikTok"],
+      ["ads",  "Betalt annoncering (fx Facebook- og Google-annoncer)"],
+      ["name", "Mit fornavn må nævnes sammen med materialet"]
+    ],
+    hYou: "Dig",
+    name: "Navn", birth: "Fødselsdato", email: "E-mail", phone: "Telefon (valgfrit)",
+    guardianWhy: "Du er under 18, så en forælder eller værge skal også skrive under.",
+    gname: "Forælder/værges navn", grel: "Relation til dig",
+    hSign: "Underskrift",
+    signHelp: "Skriv din underskrift med fingeren eller musen i feltet herunder.",
+    padHint: "Underskriv her",
+    clear: "Slet og prøv igen",
+    agree: "Jeg har læst og forstået ovenstående, og jeg giver mit samtykke.",
+    send: "Underskriv og send",
+    errName: "Skriv venligst dit navn.",
+    errEmail: "Skriv venligst en e-mail, så du kan få din kopi.",
+    errUse: "Sæt kryds ved mindst ét sted, materialet må bruges.",
+    errSign: "Der mangler en underskrift.",
+    errAgree: "Sæt kryds i feltet om samtykke.",
+    errGuardian: "Skriv forælder eller værges navn.",
+    done: "Tak. Din erklæring er underskrevet og sendt til Sportsværkstedet. En kopi ligger nu i din mappe med hentede filer.",
+    foot: "Underskrevet digitalt. Tidspunkt og den viste tekst gemmes sammen med underskriften.",
+    yes: "JA", no: "NEJ",
+    pdfSigned: "Underskrevet digitalt", pdfAt: "Tidspunkt",
+    pdfUses: "Samtykke givet til", pdfPerson: "Underskriver", pdfGuardian: "Forælder/værge"
+  },
+  en: {
+    title: "Consent to the use of film and photographs",
+    who: "Data controller: Sportsvaerkstedet, Domhusgade 13, 1st floor, 6000 Kolding, Denmark" +
+         "  ·  skriv@sportsvaerkstedet.dk",
+    terms: [
+      "I give Sportsvaerkstedet permission to film and photograph me during my treatment, and to use the material for marketing in the channels I have ticked below.",
+      "I understand that the material may show my body, my injuries and the treatment itself, and that I may be recognisable.",
+      "This consent is voluntary and I may withdraw it at any time by writing to Sportsvaerkstedet. They will then remove the material from their own channels as soon as possible. Material that others have already shared or downloaded cannot always be removed - I have been told this.",
+      "I will receive a copy of this declaration by email. Sportsvaerkstedet keeps it for as long as the material is in use, and for up to two years afterwards.",
+      "I may ask to see, correct or delete my information, and I may complain to the Danish Data Protection Agency."
+    ],
+    hUses: "Where may the material be used?",
+    usesHelp: "Tick what you agree to. It is entirely your choice - you may say yes to one and no to the rest.",
+    uses: [
+      ["web",  "The Sportsvaerkstedet website"],
+      ["fb",   "Facebook"],
+      ["ig",   "Instagram"],
+      ["yt",   "YouTube and TikTok"],
+      ["ads",  "Paid advertising (for example Facebook and Google ads)"],
+      ["name", "My first name may be used alongside the material"]
+    ],
+    hYou: "About you",
+    name: "Name", birth: "Date of birth", email: "Email", phone: "Phone (optional)",
+    guardianWhy: "You are under 18, so a parent or guardian must sign as well.",
+    gname: "Parent/guardian name", grel: "Relationship to you",
+    hSign: "Signature",
+    signHelp: "Sign with your finger or mouse in the box below.",
+    padHint: "Sign here",
+    clear: "Clear and try again",
+    agree: "I have read and understood the above, and I give my consent.",
+    send: "Sign and send",
+    errName: "Please enter your name.",
+    errEmail: "Please enter an email so you can receive your copy.",
+    errUse: "Please tick at least one place the material may be used.",
+    errSign: "The signature is missing.",
+    errAgree: "Please tick the consent box.",
+    errGuardian: "Please enter the parent or guardian's name.",
+    done: "Thank you. Your declaration has been signed and sent to Sportsvaerkstedet. A copy is now in your downloads folder.",
+    foot: "Signed digitally. The time and the exact wording shown are stored with the signature.",
+    yes: "YES", no: "NO",
+    pdfSigned: "Signed digitally", pdfAt: "Time",
+    pdfUses: "Consent given for", pdfPerson: "Signed by", pdfGuardian: "Parent/guardian"
+  }
+};
+
+const DEMO = {
+  da: "DEMO. Det her er en prøve, Anirudha har bygget, så du kan se hvordan det virker. Udfyld den, skriv under med fingeren og tryk send - så henter din telefon den PDF, dine \"fotomodeller\" ville få. I den færdige version bliver den i stedet sendt til dig og til dem på e-mail, og gemt hos dig. Intet af det, du skriver her, forlader din telefon.",
+  en: "DEMO. This is a sample so you can see how it works. Fill it in, sign with your finger and press send - your phone downloads the PDF your \"models\" would receive. In the finished version it is emailed to you and to them instead, and stored on your side. Nothing you type here leaves your phone."
+};
+
+let LANG = "da";
+const $ = id => document.getElementById(id);
+
+function draw() {
+  const t = T[LANG];
+  document.documentElement.lang = LANG;
+  $("demoNote").textContent = DEMO[LANG];
+  $("title").textContent = t.title;
+  $("who").textContent = t.who;
+  $("terms").innerHTML = "";
+  t.terms.forEach(p => { const e = document.createElement("p"); e.textContent = p; $("terms").appendChild(e); });
+
+  $("hUses").textContent = t.hUses;
+  $("usesHelp").textContent = t.usesHelp;
+  const kept = {};
+  document.querySelectorAll("#uses input").forEach(i => kept[i.dataset.key] = i.checked);
+  $("uses").innerHTML = "";
+  t.uses.forEach(([key, label]) => {
+    const wrap = document.createElement("label");
+    wrap.className = "tick";
+    const box = document.createElement("input");
+    box.type = "checkbox"; box.dataset.key = key;
+    if (kept[key]) box.checked = true;
+    const span = document.createElement("span");
+    span.textContent = label;
+    wrap.append(box, span);
+    $("uses").appendChild(wrap);
+  });
+
+  $("hYou").textContent = t.hYou;
+  const put = (id, text, input) => {
+    const el = $(id);
+    el.childNodes[0].nodeValue = text + " ";
+  };
+  put("lName", t.name); put("lBirth", t.birth); put("lEmail", t.email); put("lPhone", t.phone);
+  put("lGName", t.gname); put("lGRel", t.grel);
+  $("guardianWhy").textContent = t.guardianWhy;
+
+  $("hSign").textContent = t.hSign;
+  $("signHelp").textContent = t.signHelp;
+  $("padHint").textContent = t.padHint;
+  $("clear").textContent = t.clear;
+  $("agreeText").textContent = t.agree;
+  $("send").textContent = t.send;
+  $("foot").textContent = t.foot;
+
+  $("btnDa").setAttribute("aria-pressed", LANG === "da");
+  $("btnEn").setAttribute("aria-pressed", LANG === "en");
+}
+
+$("btnDa").onclick = () => { LANG = "da"; draw(); };
+$("btnEn").onclick = () => { LANG = "en"; draw(); };
+
+// ------------------------------------------------------------- under 18s
+$("birth").addEventListener("change", () => {
+  const v = $("birth").value;
+  let under = false;
+  if (v) {
+    const born = new Date(v), now = new Date();
+    let age = now.getFullYear() - born.getFullYear();
+    const m = now.getMonth() - born.getMonth();
+    if (m < 0 || (m === 0 && now.getDate() < born.getDate())) age--;
+    under = age < 18;
+  }
+  $("guardianBox").style.display = under ? "" : "none";
+});
+
+// ---------------------------------------------------------- signature pad
+const pad = $("pad");
+const ctx = pad.getContext("2d");
+let drawing = false, inked = false, last = null;
+
+function sizePad() {
+  // Keep the bitmap at the real device resolution, or a finger-drawn line
+  // comes out as a blurry staircase in the PDF.
+  const ratio = window.devicePixelRatio || 1;
+  const box = pad.getBoundingClientRect();
+  const data = inked ? pad.toDataURL() : null;
+  pad.width = Math.round(box.width * ratio);
+  pad.height = Math.round(box.height * ratio);
+  ctx.scale(ratio, ratio);
+  ctx.lineWidth = 2.2; ctx.lineCap = "round"; ctx.lineJoin = "round";
+  ctx.strokeStyle = "#111827";
+  if (data) { const img = new Image(); img.onload = () => ctx.drawImage(img, 0, 0, box.width, box.height); img.src = data; }
+}
+
+function at(ev) {
+  const box = pad.getBoundingClientRect();
+  return { x: ev.clientX - box.left, y: ev.clientY - box.top };
+}
+
+pad.addEventListener("pointerdown", ev => {
+  ev.preventDefault();
+  pad.setPointerCapture(ev.pointerId);
+  drawing = true; last = at(ev);
+  ctx.beginPath(); ctx.moveTo(last.x, last.y); ctx.lineTo(last.x + 0.1, last.y); ctx.stroke();
+  inked = true;
+});
+pad.addEventListener("pointermove", ev => {
+  if (!drawing) return;
+  ev.preventDefault();
+  const p = at(ev);
+  ctx.beginPath(); ctx.moveTo(last.x, last.y); ctx.lineTo(p.x, p.y); ctx.stroke();
+  last = p;
+});
+["pointerup", "pointercancel", "pointerleave"].forEach(e =>
+  pad.addEventListener(e, () => { drawing = false; }));
+
+$("clear").onclick = () => { ctx.clearRect(0, 0, pad.width, pad.height); inked = false; };
+window.addEventListener("resize", sizePad);
+
+// ------------------------------------------------------------------ send
+function stamp() {
+  const d = new Date();
+  const p = n => String(n).padStart(2, "0");
+  return p(d.getDate()) + "-" + p(d.getMonth() + 1) + "-" + d.getFullYear() +
+         " " + p(d.getHours()) + ":" + p(d.getMinutes());
+}
+
+$("send").onclick = () => {
+  const t = T[LANG];
+  const name = $("name").value.trim();
+  const email = $("email").value.trim();
+  const boxes = [...document.querySelectorAll("#uses input")];
+  const anyUse = boxes.some(b => b.checked && b.dataset.key !== "name");
+  const guardianNeeded = $("guardianBox").style.display !== "none";
+
+  let problem = "";
+  if (!name) problem = t.errName;
+  else if (!email || email.indexOf("@") < 1) problem = t.errEmail;
+  else if (guardianNeeded && !$("gname").value.trim()) problem = t.errGuardian;
+  else if (!anyUse) problem = t.errUse;
+  else if (!inked) problem = t.errSign;
+  else if (!$("agree").checked) problem = t.errAgree;
+
+  const err = $("err");
+  if (problem) { err.textContent = problem; err.hidden = false; err.scrollIntoView({block:"nearest"}); return; }
+  err.hidden = true;
+
+  const when = stamp();
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  const M = 18, W = 210 - M * 2;
+  let y = M;
+
+  doc.setFont("helvetica", "bold"); doc.setFontSize(15);
+  doc.text(t.title, M, y); y += 7;
+  doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(90);
+  doc.splitTextToSize(t.who, W).forEach(l => { doc.text(l, M, y); y += 4.4; });
+  y += 4; doc.setTextColor(20); doc.setFontSize(10);
+
+  t.terms.forEach(p => {
+    doc.splitTextToSize(p, W).forEach(l => {
+      if (y > 262) { doc.addPage(); y = M; }
+      doc.text(l, M, y); y += 4.8;
+    });
+    y += 2.5;
+  });
+
+  y += 3;
+  doc.setFont("helvetica", "bold"); doc.text(t.pdfUses + ":", M, y); y += 5.5;
+  doc.setFont("helvetica", "normal");
+  boxes.forEach(b => {
+    if (y > 262) { doc.addPage(); y = M; }
+    const label = b.nextElementSibling.textContent;
+    doc.text((b.checked ? "[x] " : "[ ] ") + label + "  -  " + (b.checked ? t.yes : t.no), M, y);
+    y += 5;
+  });
+
+  y += 4;
+  if (y > 210) { doc.addPage(); y = M; }
+  doc.setFont("helvetica", "bold"); doc.text(t.pdfPerson + ":", M, y); y += 5.5;
+  doc.setFont("helvetica", "normal");
+  const lines = [
+    t.name + ": " + name,
+    t.birth + ": " + ($("birth").value || "-"),
+    t.email + ": " + email,
+    t.phone + ": " + ($("phone").value.trim() || "-")
+  ];
+  if (guardianNeeded) {
+    lines.push(t.pdfGuardian + ": " + $("gname").value.trim() +
+               ($("grel").value.trim() ? " (" + $("grel").value.trim() + ")" : ""));
+  }
+  lines.forEach(l => { doc.text(l, M, y); y += 5; });
+
+  y += 4;
+  doc.setFont("helvetica", "bold"); doc.text(t.hSign + ":", M, y); y += 3;
+  doc.setFont("helvetica", "normal");
+  doc.addImage(pad.toDataURL("image/png"), "PNG", M, y, 80, 26);
+  y += 28;
+  doc.setDrawColor(150); doc.line(M, y, M + 80, y); y += 5;
+  doc.setFontSize(9); doc.setTextColor(90);
+  doc.text(name, M, y); y += 4.6;
+  doc.text(t.pdfSigned + "  ·  " + t.pdfAt + ": " + when, M, y);
+
+  const safe = name.replace(/[^\p{L}\p{N} _-]/gu, "").trim().replace(/\s+/g, "-") || "samtykke";
+  doc.save("Samtykke-" + safe + ".pdf");
+
+  $("done").textContent = t.done;
+  $("done").hidden = false;
+  $("send").disabled = true;
+  $("done").scrollIntoView({ block: "nearest" });
+};
+
+draw();
+sizePad();
+</script>
+</body>
+</html>
