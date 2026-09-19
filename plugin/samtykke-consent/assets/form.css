@@ -1,0 +1,70 @@
+/* Deliberately restrained. The client asked whether it would use the site's
+   own fonts and colours - so nothing here sets a font family, a text colour or
+   a background. Everything inherits from Enfold; only spacing, borders and the
+   signature pad are defined, because the theme has no opinion about those. */
+
+.samtykke { max-width: 720px; }
+
+.samtykke-block {
+  border: 1px solid rgba(128, 128, 128, .35);
+  border-radius: 8px;
+  padding: 16px 18px;
+  margin: 0 0 16px;
+}
+
+.samtykke-lang { display: flex; gap: 8px; justify-content: flex-end; margin: 0 0 10px; }
+.samtykke-langbtn[aria-pressed="true"] { font-weight: 700; text-decoration: underline; }
+
+.samtykke-title { margin: 0 0 6px; }
+.samtykke-who { font-size: .85em; opacity: .75; margin: 0 0 12px; }
+.samtykke-help { font-size: .9em; opacity: .8; margin: 0 0 12px; }
+
+.samtykke-two { display: flex; gap: 14px; flex-wrap: wrap; }
+.samtykke-two > * { flex: 1 1 220px; }
+
+.samtykke-f { display: block; margin: 0 0 14px; }
+.samtykke-lab { display: block; font-size: .9em; opacity: .8; margin: 0 0 4px; }
+.samtykke-f input {
+  display: block; width: 100%; padding: 10px 12px;
+  border: 1px solid rgba(128, 128, 128, .5); border-radius: 6px;
+  font: inherit; color: inherit; background: transparent;
+}
+
+.samtykke-tick {
+  display: flex; gap: 10px; align-items: flex-start;
+  padding: 11px 12px; margin: 0 0 9px;
+  border: 1px solid rgba(128, 128, 128, .35); border-radius: 8px;
+  cursor: pointer;
+}
+.samtykke-tick input { margin: 4px 0 0; width: 18px; height: 18px; flex: 0 0 18px; }
+
+.samtykke-pad {
+  display: block; width: 100%; height: 170px;
+  border: 1px dashed rgba(128, 128, 128, .6); border-radius: 8px;
+  background: rgba(255, 255, 255, .55);
+  touch-action: none;   /* or a finger scrolls the page instead of drawing */
+}
+.samtykke-padrow {
+  display: flex; justify-content: space-between; align-items: center;
+  gap: 10px; margin: 6px 0 14px; font-size: .85em; opacity: .8;
+}
+
+.samtykke-send { font: inherit; padding: 14px 22px; width: 100%; cursor: pointer; }
+.samtykke-send[disabled] { opacity: .55; cursor: default; }
+
+.samtykke-err {
+  margin: 0 0 12px; padding: 10px 12px; border-radius: 6px;
+  border-left: 4px solid #c0392b; background: rgba(192, 57, 43, .08);
+}
+.samtykke-done {
+  margin: 14px 0 0; padding: 12px 14px; border-radius: 6px;
+  border-left: 4px solid #1f7a4d; background: rgba(31, 122, 77, .08);
+  white-space: pre-line;
+}
+
+/* Out of sight for people, still fillable by a robot. Not display:none -
+   some bots skip hidden fields, and then the trap catches nothing. */
+.samtykke-hp {
+  position: absolute; left: -9999px; top: auto;
+  width: 1px; height: 1px; overflow: hidden;
+}
