@@ -1,7 +1,10 @@
 /* Deliberately restrained. The client asked whether it would use the site's
    own fonts and colours - so nothing here sets a font family, a text colour or
-   a background. Everything inherits from Enfold; only spacing, borders and the
-   signature pad are defined, because the theme has no opinion about those. */
+   a background for text. Everything inherits from Enfold.
+
+   1.0.1: the small grey labels are gone. They were .9em at 80% opacity, which
+   on his site read as washed-out next to the body text. Every label now uses
+   the page's own size and colour, which is what he asked for. */
 
 .samtykke { max-width: 720px; }
 
@@ -13,17 +16,16 @@
 }
 
 .samtykke-lang { display: flex; gap: 8px; justify-content: flex-end; margin: 0 0 10px; }
-.samtykke-langbtn[aria-pressed="true"] { font-weight: 700; text-decoration: underline; }
 
 .samtykke-title { margin: 0 0 6px; }
-.samtykke-who { font-size: .85em; opacity: .75; margin: 0 0 12px; }
-.samtykke-help { font-size: .9em; opacity: .8; margin: 0 0 12px; }
+.samtykke-who { margin: 0 0 12px; }
+.samtykke-help { margin: 0 0 12px; }
 
 .samtykke-two { display: flex; gap: 14px; flex-wrap: wrap; }
 .samtykke-two > * { flex: 1 1 220px; }
 
 .samtykke-f { display: block; margin: 0 0 14px; }
-.samtykke-lab { display: block; font-size: .9em; opacity: .8; margin: 0 0 4px; }
+.samtykke-lab { display: block; margin: 0 0 4px; }
 .samtykke-f input {
   display: block; width: 100%; padding: 10px 12px;
   border: 1px solid rgba(128, 128, 128, .5); border-radius: 6px;
@@ -46,11 +48,48 @@
 }
 .samtykke-padrow {
   display: flex; justify-content: space-between; align-items: center;
-  gap: 10px; margin: 6px 0 14px; font-size: .85em; opacity: .8;
+  gap: 10px; margin: 6px 0 14px;
 }
 
-.samtykke-send { font: inherit; padding: 14px 22px; width: 100%; cursor: pointer; }
+/* Buttons.
+
+   He reported black text on a button the same colour as the text - unreadable.
+   That happens when the theme paints a background and this plugin sets only a
+   colour, or the other way round. The fix is to set BOTH, and to derive them
+   from the page itself: currentColor is whatever the surrounding text is, on a
+   transparent background. So the button can never end up the same colour as
+   its own label, whatever the theme does, on a light site or a dark one. */
+.samtykke button,
+.samtykke-send {
+  font: inherit;
+  cursor: pointer;
+  border-radius: 6px;
+  padding: 8px 16px;
+  /* !important, reluctantly and on purpose. Enfold styles buttons through
+     selectors like "#top .main_color button", which carries an id and beats
+     anything a plugin can write with classes alone. That is exactly how the
+     black-on-black button happened. These four are the minimum needed to
+     guarantee a readable button under any theme. */
+  color: inherit !important;
+  background: transparent !important;
+  border: 1px solid currentColor !important;
+  text-shadow: none !important;
+  opacity: 1;
+}
+
+.samtykke button:hover,
+.samtykke-send:hover { background: rgba(128, 128, 128, .12); }
+
+.samtykke-send {
+  display: block;
+  width: 100%;
+  padding: 14px 22px;
+  font-weight: 700;
+  border-width: 2px !important;
+}
 .samtykke-send[disabled] { opacity: .55; cursor: default; }
+
+.samtykke-langbtn[aria-pressed="true"] { font-weight: 700; border-width: 2px !important; }
 
 .samtykke-err {
   margin: 0 0 12px; padding: 10px 12px; border-radius: 6px;

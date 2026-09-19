@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Samtykke - film og billeder
  * Description: Samtykkeerklæring til brug af film og billeder. Sæt kortkoden [samtykke] ind på en side. PDF'en sendes med e-mail og gemmes ikke på serveren.
- * Version:     1.0.0
+ * Version:     1.0.1
  * Author:      Anirudha Talmale
  * Text Domain: samtykke-consent
  */
@@ -11,7 +11,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('SAMTYKKE_VERSION', '1.0.0');
+define('SAMTYKKE_VERSION', '1.0.1');
 define('SAMTYKKE_DIR', plugin_dir_path(__FILE__));
 define('SAMTYKKE_URL', plugin_dir_url(__FILE__));
 define('SAMTYKKE_OPTION', 'samtykke_settings');
