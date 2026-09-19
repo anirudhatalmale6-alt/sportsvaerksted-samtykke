@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Samtykke - film og billeder
  * Description: Samtykkeerklæring til brug af film og billeder. Sæt kortkoden [samtykke] ind på en side. PDF'en sendes med e-mail og gemmes ikke på serveren.
- * Version:     1.0.2
+ * Version:     1.0.3
  * Author:      Anirudha Talmale
  * Text Domain: samtykke-consent
  */
@@ -11,7 +11,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('SAMTYKKE_VERSION', '1.0.2');
+define('SAMTYKKE_VERSION', '1.0.3');
 define('SAMTYKKE_DIR', plugin_dir_path(__FILE__));
 define('SAMTYKKE_URL', plugin_dir_url(__FILE__));
 define('SAMTYKKE_OPTION', 'samtykke_settings');
@@ -29,6 +29,10 @@ function samtykke_defaults() {
         // His site's gold. Kept as a setting so the next change of mind does
         // not need a new release.
         'label_color'    => '#d1af86',
+        // Everything that is not a field label: the checkbox wording, the
+        // sign-field text, the small print. Grey on his near-black page was
+        // the complaint.
+        'text_color'     => '#ffffff',
 
         'da_title'   => 'Samtykke til brug af film og billeder',
         'da_who'     => 'Dataansvarlig: Sportsværkstedet, Domhusgade 13, 1. sal, 6000 Kolding  ·  skriv@sportsvaerkstedet.dk',
@@ -77,7 +81,7 @@ function samtykke_strings() {
             'usesHelp' => 'Sæt kryds ved det, du siger ja til.',
             'hYou' => 'Dig',
             'name' => 'Navn', 'birth' => 'Fødselsdato', 'email' => 'E-mail',
-            'phone' => 'Telefon (valgfrit)', 'today' => 'Dagens dato',
+            'phone' => 'Telefon (valgfrit)', 'today' => 'Dato for underskrift',
             'hGuardian' => 'Forælder eller værge',
             'guardianWhy' => 'Udfyldes kun, hvis den, der er filmet, er under 18 år. Forælder eller værge skriver under sammen med den unge.',
             'gname' => 'Forælder/værges navn', 'grel' => 'Relation',
@@ -90,7 +94,7 @@ function samtykke_strings() {
             'send' => 'Underskriv og send',
             'sending' => 'Sender ...',
             'errName' => 'Skriv venligst dit navn.',
-            'errToday' => 'Skriv venligst dagens dato.',
+            'errToday' => 'Skriv venligst datoen.',
             'errUse' => 'Sæt kryds i feltet om brug af materialet.',
             'errSign' => 'Der mangler en underskrift.',
             'errAgree' => 'Sæt kryds i feltet om samtykke.',
@@ -113,7 +117,7 @@ function samtykke_strings() {
             'usesHelp' => 'Tick what you agree to.',
             'hYou' => 'About you',
             'name' => 'Name', 'birth' => 'Date of birth', 'email' => 'Email',
-            'phone' => 'Phone (optional)', 'today' => "Today's date",
+            'phone' => 'Phone (optional)', 'today' => 'Date signed',
             'hGuardian' => 'Parent or guardian',
             'guardianWhy' => 'Only needed if the person being filmed is under 18. A parent or guardian signs alongside them.',
             'gname' => 'Parent/guardian name', 'grel' => 'Relationship',
@@ -304,7 +308,7 @@ function samtykke_sanitize($input) {
             continue;
         }
 
-        if ($key === 'label_color') {
+        if ($key === 'label_color' || $key === 'text_color') {
             $colour = sanitize_hex_color(isset($input[$key]) ? $input[$key] : '');
             $out[$key] = $colour ? $colour : $default;
             continue;
@@ -382,7 +386,16 @@ function samtykke_settings_page() {
               <input id="label_color" type="color"
                      name="<?php echo esc_attr(SAMTYKKE_OPTION); ?>[label_color]"
                      value="<?php echo esc_attr(samtykke_get('label_color')); ?>">
-              <p class="description">Farven på "Navn", "E-mail" og teksten ved underskriftsfelterne.</p>
+              <p class="description">Farven på feltnavnene: "Navn", "E-mail", "Dato for underskrift".</p>
+            </td>
+          </tr>
+          <tr>
+            <th scope="row"><label for="text_color">Farve på den øvrige tekst</label></th>
+            <td>
+              <input id="text_color" type="color"
+                     name="<?php echo esc_attr(SAMTYKKE_OPTION); ?>[text_color]"
+                     value="<?php echo esc_attr(samtykke_get('text_color')); ?>">
+              <p class="description">Teksten ved afkrydsningsfelterne, ved underskriftsfelterne og den lille vejledningstekst.</p>
             </td>
           </tr>
         </table>

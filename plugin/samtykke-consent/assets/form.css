@@ -18,8 +18,8 @@
 .samtykke-lang { display: flex; gap: 8px; justify-content: flex-end; margin: 0 0 10px; }
 
 .samtykke-title { margin: 0 0 6px; }
-.samtykke-who { margin: 0 0 12px; }
-.samtykke-help { margin: 0 0 12px; }
+.samtykke-who { margin: 0 0 12px; color: var(--samtykke-text, inherit) !important; }
+.samtykke-help { margin: 0 0 12px; color: var(--samtykke-text, inherit) !important; }
 
 .samtykke-two { display: flex; gap: 14px; flex-wrap: wrap; }
 .samtykke-two > * { flex: 1 1 220px; }
@@ -46,6 +46,9 @@
   cursor: pointer;
 }
 .samtykke-tick input { margin: 4px 0 0; width: 18px; height: 18px; flex: 0 0 18px; }
+/* The wording beside a checkbox came out #444 on a near-black page - his
+   "the text by the checkboxes are still grey". */
+.samtykke-tick span { color: var(--samtykke-text, inherit) !important; }
 
 .samtykke-pad {
   display: block; width: 100%; height: 170px;
@@ -62,7 +65,7 @@
 /* Only the hint text takes the colour. Putting it on the row made the "clear"
    button inherit it too - gold on white is 2.1:1, which is unreadable on a
    light background even though it looks fine on his dark one. */
-.samtykke-padrow span { color: var(--samtykke-label, inherit) !important; }
+.samtykke-padrow span { color: var(--samtykke-text, inherit) !important; }
 
 /* Buttons.
 

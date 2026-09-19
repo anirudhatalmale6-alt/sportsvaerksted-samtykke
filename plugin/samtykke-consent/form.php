@@ -8,7 +8,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 ?>
-<div class="samtykke" id="samtykke" style="--samtykke-label: <?php echo esc_attr(samtykke_get('label_color')); ?>;">
+<div class="samtykke" id="samtykke" style="--samtykke-label: <?php echo esc_attr(samtykke_get('label_color')); ?>; --samtykke-text: <?php echo esc_attr(samtykke_get('text_color')); ?>;">
 
   <div class="samtykke-lang">
     <button type="button" class="samtykke-langbtn" data-lang="da" aria-pressed="true">Dansk</button>
@@ -38,15 +38,17 @@ if (!defined('ABSPATH')) {
       <label class="samtykke-f"><span class="samtykke-lab" id="sam-lEmail"></span><input type="email" id="sam-email" autocomplete="email"></label>
       <label class="samtykke-f"><span class="samtykke-lab" id="sam-lPhone"></span><input type="tel" id="sam-phone" autocomplete="tel"></label>
     </div>
-    <div class="samtykke-two">
-      <label class="samtykke-f"><span class="samtykke-lab" id="sam-lToday"></span><input type="date" id="sam-today"></label>
-      <span></span>
-    </div>
   </div>
 
   <div class="samtykke-block">
     <h3 id="sam-hSign"></h3>
     <p class="samtykke-help" id="sam-signHelp"></p>
+    <!-- The date of signing belongs beside the signature. It was in the
+         "about you" block and he did not find it there - twice. -->
+    <div class="samtykke-two">
+      <label class="samtykke-f"><span class="samtykke-lab" id="sam-lToday"></span><input type="date" id="sam-today"></label>
+      <span></span>
+    </div>
     <canvas class="samtykke-pad" id="sam-pad"></canvas>
     <div class="samtykke-padrow">
       <span id="sam-padHint"></span>
