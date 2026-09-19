@@ -1,9 +1,8 @@
-"""Build the two stand-alone consent files.
+"""Build the stand-alone consent file.
 
-One template, two languages, so a change to the machinery cannot land in the
-Danish file and miss the English one. Everything is inlined - jsPDF included -
-because the finished file has to work as an email attachment or off a USB
-stick with the wifi switched off. No server, nothing stored anywhere.
+One file, both languages, switchable - their request. Everything is inlined,
+jsPDF included, so it works as an email attachment or off a USB stick with the
+wifi off. No server, nothing stored anywhere.
 """
 import io
 import json
@@ -11,42 +10,30 @@ import os
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 JSPDF = open(os.path.join(HERE, "jspdf.umd.min.js"), encoding="utf-8").read()
+OUTFILE = "Samtykke-Consent.html"
 
-DA = {
-    "lang": "da",
-    "file": "Samtykke-DANSK.html",
-    "pdfname": "Samtykke",
-    "editheader": """  TEKSTEN STÅR HERUNDER. Du må gerne rette i den.
-
-  Ret kun det, der står mellem anførselstegnene "sådan her".
-  Lad komma, klammer og anførselstegn stå, som de er - så virker filen
-  fortsat. Gem filen bagefter, og åbn den i en browser for at se resultatet.
-
-  Alt under "SLUT PÅ TEKSTEN" er maskineriet. Der er ingen grund til at røre
-  det.""",
-    "editend": "SLUT PÅ TEKSTEN. Herunder er maskineriet - lad det være.",
-    "t": {
+# Their instruction, 19/09: one blanket permission instead of a list.
+# "I want to have the freedom, instead of a patchwork of individual wishes.
+#  (i tried that and it made things difficult) If people can not accept that,
+#  then so be it."
+TEXT = {
+    "da": {
+        "langname": "Dansk",
         "title": "Samtykke til brug af film og billeder",
         "who": "Dataansvarlig: Sportsværkstedet, Domhusgade 13, 1. sal, 6000 Kolding  ·  skriv@sportsvaerkstedet.dk",
-        "intro": "Udfyld, sæt kryds ved det du siger ja til, og skriv under nederst.",
+        "intro": "Udfyld, sæt kryds, og skriv under nederst.",
         "terms": [
-            "Jeg giver Sportsværkstedet tilladelse til at optage video og tage billeder af mig i forbindelse med min behandling, og til at bruge materialet til markedsføring i de sammenhænge, jeg har sat kryds ved nedenfor.",
+            "Jeg giver Sportsværkstedet tilladelse til at optage video og tage billeder af mig i forbindelse med min behandling.",
             "Jeg er indforstået med, at optagelserne kan vise min krop, mine skader og selve behandlingen, og at jeg kan være genkendelig.",
             "Samtykket er frivilligt. Jeg kan til enhver tid trække det tilbage ved at skrive til Sportsværkstedet. Herefter fjerner Sportsværkstedet materialet fra egne kanaler hurtigst muligt. Materiale, som andre allerede har delt eller hentet ned, kan ikke altid fjernes - det er jeg oplyst om.",
             "Jeg får en kopi af denne erklæring. Sportsværkstedet opbevarer den, så længe materialet er i brug, og i op til to år derefter.",
             "Jeg kan bede om indsigt i, rettelse af eller sletning af mine oplysninger, og jeg kan klage til Datatilsynet.",
         ],
-        "hUses": "Hvor må materialet bruges?",
-        "usesHelp": "Sæt kryds ved det, du siger ja til. Du bestemmer selv - du kan sige ja til noget og nej til resten.",
+        "hUses": "Tilladelse",
+        "usesHelp": "Sæt kryds ved det, du siger ja til.",
         "uses": [
-            ["web", "Sportsværkstedets hjemmeside"],
-            ["fb", "Facebook"],
-            ["ig", "Instagram"],
-            ["yt", "YouTube og TikTok"],
-            ["ads", "Betalt annoncering (fx Facebook- og Google-annoncer)"],
-            ["print", "Tryksager - brochurer, plakater, opslag"],
-            ["other", "Anden markedsføring for Sportsværkstedet"],
-            ["name", "Mit fornavn må nævnes sammen med materialet"],
+            ["all", "Sportsværkstedet må bruge materialet på enhver måde, i ethvert medie og i ethvert land, så længe det har direkte forbindelse til Sportsværkstedet."],
+            ["name", "Mit fornavn må nævnes i forbindelse med materialet."],
         ],
         "hYou": "Dig",
         "name": "Navn", "birth": "Fødselsdato", "email": "E-mail",
@@ -62,53 +49,35 @@ DA = {
         "agree": "Jeg har læst og forstået ovenstående, og jeg giver mit samtykke.",
         "send": "Underskriv og gem som PDF",
         "errName": "Skriv venligst dit navn.",
-        "errUse": "Sæt kryds ved mindst ét sted, materialet må bruges.",
+        "errUse": "Sæt kryds i feltet om brug af materialet.",
         "errSign": "Der mangler en underskrift.",
         "errAgree": "Sæt kryds i feltet om samtykke.",
         "errGuardianSign": "Der mangler en underskrift fra forælder eller værge.",
         "done": "Tak. PDF'en er gemt på denne enhed.\n\nSidder du med din egen telefon eller computer, så send den til skriv@sportsvaerkstedet.dk. Sidder du hos Sportsværkstedet, har vi den allerede.",
         "foot": "Denne fil virker uden internet. Intet af det, du skriver, sendes nogen steder hen - PDF'en gemmes kun på denne enhed.",
         "yes": "JA", "no": "NEJ",
+        "pdfName": "Samtykke",
         "pdfSigned": "Underskrevet digitalt", "pdfAt": "Tidspunkt",
         "pdfUses": "Samtykke givet til", "pdfPerson": "Underskriver",
         "pdfGuardian": "Forælder/værge",
     },
-}
-
-EN = {
-    "lang": "en",
-    "file": "Consent-ENGLISH.html",
-    "pdfname": "Consent",
-    "editheader": """  THE TEXT IS BELOW. You are meant to edit it.
-
-  Only change what sits between the quotation marks "like this".
-  Leave the commas, brackets and quotation marks exactly where they are and
-  the file will keep working. Save it, then open it in a browser to check.
-
-  Everything below "END OF THE TEXT" is the machinery. No reason to touch it.""",
-    "editend": "END OF THE TEXT. Machinery below - leave it alone.",
-    "t": {
+    "en": {
+        "langname": "English",
         "title": "Consent to the use of film and photographs",
         "who": "Data controller: Sportsvaerkstedet, Domhusgade 13, 1st floor, 6000 Kolding, Denmark  ·  skriv@sportsvaerkstedet.dk",
-        "intro": "Fill this in, tick what you agree to, and sign at the bottom.",
+        "intro": "Fill this in, tick the boxes, and sign at the bottom.",
         "terms": [
-            "I give Sportsvaerkstedet permission to film and photograph me during my treatment, and to use the material for marketing in the ways I have ticked below.",
+            "I give Sportsvaerkstedet permission to film and photograph me during my treatment.",
             "I understand that the material may show my body, my injuries and the treatment itself, and that I may be recognisable.",
             "This consent is voluntary. I may withdraw it at any time by writing to Sportsvaerkstedet, who will then remove the material from their own channels as soon as possible. Material that others have already shared or downloaded cannot always be removed - I have been told this.",
             "I receive a copy of this declaration. Sportsvaerkstedet keeps it for as long as the material is in use, and for up to two years afterwards.",
             "I may ask to see, correct or delete my information, and I may complain to the Danish Data Protection Agency.",
         ],
-        "hUses": "Where may the material be used?",
-        "usesHelp": "Tick what you agree to. It is your choice - you may say yes to some and no to the rest.",
+        "hUses": "Permission",
+        "usesHelp": "Tick what you agree to.",
         "uses": [
-            ["web", "The Sportsvaerkstedet website"],
-            ["fb", "Facebook"],
-            ["ig", "Instagram"],
-            ["yt", "YouTube and TikTok"],
-            ["ads", "Paid advertising (for example Facebook and Google ads)"],
-            ["print", "Print - brochures, posters, signs"],
-            ["other", "Any other marketing for Sportsvaerkstedet"],
-            ["name", "My first name may be used alongside the material"],
+            ["all", "Sportsvaerkstedet may use the material in any way, in any medium and in any country, as long as it is directly connected to Sportsvaerkstedet."],
+            ["name", "My first name may be mentioned in connection with the material."],
         ],
         "hYou": "About you",
         "name": "Name", "birth": "Date of birth", "email": "Email",
@@ -124,25 +93,38 @@ EN = {
         "agree": "I have read and understood the above, and I give my consent.",
         "send": "Sign and save as PDF",
         "errName": "Please enter your name.",
-        "errUse": "Please tick at least one place the material may be used.",
+        "errUse": "Please tick the box about use of the material.",
         "errSign": "The signature is missing.",
         "errAgree": "Please tick the consent box.",
         "errGuardianSign": "The parent or guardian's signature is missing.",
         "done": "Thank you. The PDF has been saved on this device.\n\nIf you are using your own phone or computer, please send it to skriv@sportsvaerkstedet.dk. If you are at Sportsvaerkstedet, we already have it.",
         "foot": "This file works without an internet connection. Nothing you type is sent anywhere - the PDF is saved on this device only.",
         "yes": "YES", "no": "NO",
+        "pdfName": "Consent",
         "pdfSigned": "Signed digitally", "pdfAt": "Time",
         "pdfUses": "Consent given for", "pdfPerson": "Signed by",
         "pdfGuardian": "Parent/guardian",
     },
 }
 
+EDIT_HEADER = """  TEKSTEN STÅR HERUNDER - både den danske og den engelske.
+  THE TEXT IS BELOW - both the Danish and the English version.
+
+  Ret kun det, der står mellem anførselstegnene "sådan her".
+  Lad komma, klammer og anførselstegn stå, som de er. Gem filen bagefter,
+  og åbn den i en browser for at se resultatet.
+
+  Alt under "SLUT PÅ TEKSTEN" er maskineriet. Der er ingen grund til at
+  røre det."""
+
+EDIT_END = "SLUT PÅ TEKSTEN / END OF THE TEXT. Machinery below - leave it alone."
+
 TEMPLATE = """<!DOCTYPE html>
-<html lang="__LANG__">
+<html lang="da">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>__TITLE__</title>
+<title>Samtykke / Consent</title>
 <script>
 /* ==========================================================================
 
@@ -150,7 +132,7 @@ __EDITHEADER__
 
    ========================================================================== */
 
-const T = __TEXT__;
+const TEXT = __TEXT__;
 
 /* ==========================================================================
    __EDITEND__
@@ -173,7 +155,12 @@ const T = __TEXT__;
        margin:0 0 6px; }
   .who { color:var(--dim); font-size:14px; margin:0 0 14px; }
   .small { font-size:13.5px; color:var(--dim); margin:0 0 12px; }
+  .lang { display:flex; gap:8px; justify-content:flex-end; margin:0 0 10px; }
+  .lang button { padding:5px 12px; font-size:14px; }
+  .lang button[aria-pressed="true"] { background:var(--accent); border-color:var(--accent);
+                                      color:#fff; font-weight:600; }
   label.f { display:block; margin:0 0 12px; font-size:14px; color:var(--dim); }
+  label.f .lab { display:block; }
   label.f input { display:block; width:100%; margin-top:4px; padding:11px 12px;
     font:inherit; color:var(--text); background:var(--panel);
     border:1px solid var(--line); border-radius:7px; }
@@ -182,7 +169,7 @@ const T = __TEXT__;
   .two > * { flex:1 1 220px; }
   .terms p { margin:0 0 10px; font-size:15px; }
   .tick { display:flex; gap:10px; align-items:flex-start; margin:0 0 9px;
-          padding:9px 11px; border:1px solid var(--line); border-radius:8px; }
+          padding:11px 12px; border:1px solid var(--line); border-radius:8px; }
   .tick input { margin-top:3px; width:19px; height:19px; flex:0 0 19px; }
   .tick span { font-size:15px; }
   canvas.pad { border:1px dashed var(--line); border-radius:8px; background:var(--panel);
@@ -204,6 +191,10 @@ const T = __TEXT__;
 <div class="wrap">
 
   <div class="card">
+    <div class="lang">
+      <button type="button" id="btnDa" aria-pressed="true">Dansk</button>
+      <button type="button" id="btnEn" aria-pressed="false">English</button>
+    </div>
     <h1 id="title"></h1>
     <p class="who" id="who"></p>
     <p class="small" id="intro"></p>
@@ -219,12 +210,12 @@ const T = __TEXT__;
   <div class="card">
     <h2 id="hYou"></h2>
     <div class="two">
-      <label class="f" id="lName"> <input type="text" id="name" autocomplete="name"></label>
-      <label class="f" id="lBirth"><input type="date" id="birth"></label>
+      <label class="f"><span class="lab" id="lName"></span><input type="text" id="name" autocomplete="name"></label>
+      <label class="f"><span class="lab" id="lBirth"></span><input type="date" id="birth"></label>
     </div>
     <div class="two">
-      <label class="f" id="lEmail"><input type="email" id="email" autocomplete="email"></label>
-      <label class="f" id="lPhone"><input type="tel" id="phone" autocomplete="tel"></label>
+      <label class="f"><span class="lab" id="lEmail"></span><input type="email" id="email" autocomplete="email"></label>
+      <label class="f"><span class="lab" id="lPhone"></span><input type="tel" id="phone" autocomplete="tel"></label>
     </div>
   </div>
 
@@ -246,8 +237,8 @@ const T = __TEXT__;
     <h2 id="hGuardian"></h2>
     <p class="small" id="guardianWhy"></p>
     <div class="two">
-      <label class="f" id="lGName"><input type="text" id="gname"></label>
-      <label class="f" id="lGRel"> <input type="text" id="grel"></label>
+      <label class="f"><span class="lab" id="lGName"></span><input type="text" id="gname"></label>
+      <label class="f"><span class="lab" id="lGRel"></span><input type="text" id="grel"></label>
     </div>
     <canvas class="pad" id="gpad"></canvas>
     <div class="padrow">
@@ -268,34 +259,54 @@ const T = __TEXT__;
 <script>__JSPDF__</script>
 <script>
 const $ = id => document.getElementById(id);
-const PDFNAME = "__PDFNAME__";
+let LANG = "da";
+let T = TEXT[LANG];
 
 function fill() {
+  T = TEXT[LANG];
+  document.documentElement.lang = LANG;
+  document.title = T.title;
+
   $("title").textContent = T.title;
   $("who").textContent = T.who;
   $("intro").textContent = T.intro;
+
+  $("terms").innerHTML = "";
   T.terms.forEach(p => { const e = document.createElement("p"); e.textContent = p; $("terms").appendChild(e); });
 
-  $("hUses").textContent = T.hUses;
-  $("usesHelp").textContent = T.usesHelp;
+  // Keep the ticks when the language is switched - the person answered a
+  // question, not a sentence in a particular language.
+  const kept = {};
+  document.querySelectorAll("#uses input").forEach(i => { kept[i.dataset.key] = i.checked; });
+  $("uses").innerHTML = "";
   T.uses.forEach(([key, label]) => {
     const wrap = document.createElement("label");
     wrap.className = "tick";
     const box = document.createElement("input");
     box.type = "checkbox"; box.dataset.key = key;
+    if (kept[key]) box.checked = true;
     const span = document.createElement("span");
     span.textContent = label;
     wrap.append(box, span);
     $("uses").appendChild(wrap);
   });
 
-  const put = (id, text) => { $(id).childNodes[0].nodeValue = text + " "; };
+  // Every field label is its own span. The previous version wrote into
+  // whatever text node happened to sit in front of the input, and four
+  // labels had no such node - so four boxes came out with no description.
   $("hYou").textContent = T.hYou;
-  put("lName", T.name); put("lBirth", T.birth); put("lEmail", T.email); put("lPhone", T.phone);
+  $("lName").textContent = T.name;
+  $("lBirth").textContent = T.birth;
+  $("lEmail").textContent = T.email;
+  $("lPhone").textContent = T.phone;
+
   $("hGuardian").textContent = T.hGuardian;
   $("guardianWhy").textContent = T.guardianWhy;
-  put("lGName", T.gname); put("lGRel", T.grel);
+  $("lGName").textContent = T.gname;
+  $("lGRel").textContent = T.grel;
 
+  $("hUses").textContent = T.hUses;
+  $("usesHelp").textContent = T.usesHelp;
   $("hSign").textContent = T.hSign;
   $("signHelp").textContent = T.signHelp;
   $("padHint").textContent = T.padHint;
@@ -305,8 +316,14 @@ function fill() {
   $("agreeText").textContent = T.agree;
   $("send").textContent = T.send;
   $("foot").textContent = T.foot;
-  document.title = T.title;
+
+  $("btnDa").setAttribute("aria-pressed", LANG === "da");
+  $("btnEn").setAttribute("aria-pressed", LANG === "en");
+  $("err").hidden = true;
 }
+
+$("btnDa").onclick = () => { LANG = "da"; fill(); };
+$("btnEn").onclick = () => { LANG = "en"; fill(); };
 
 // -------------------------------------------------------- signature pads
 function makePad(canvas) {
@@ -371,12 +388,12 @@ function stamp() {
 $("send").onclick = () => {
   const name = $("name").value.trim();
   const boxes = [...document.querySelectorAll("#uses input")];
-  const anyUse = boxes.some(b => b.checked && b.dataset.key !== "name");
+  const mainUse = boxes.find(b => b.dataset.key === "all");
   const guardianStarted = $("gname").value.trim() !== "" || gsig.inked;
 
   let problem = "";
   if (!name) problem = T.errName;
-  else if (!anyUse) problem = T.errUse;
+  else if (!mainUse || !mainUse.checked) problem = T.errUse;
   else if (!sig.inked) problem = T.errSign;
   else if (!$("agree").checked) problem = T.errAgree;
   else if (guardianStarted && !gsig.inked) problem = T.errGuardianSign;
@@ -407,10 +424,11 @@ $("send").onclick = () => {
   doc.setFont("helvetica", "bold"); doc.text(T.pdfUses + ":", M, y); y += 5.5;
   doc.setFont("helvetica", "normal");
   boxes.forEach(b => {
-    room(6);
-    doc.text((b.checked ? "[x] " : "[ ] ") + b.nextElementSibling.textContent +
-             "  -  " + (b.checked ? T.yes : T.no), M, y);
-    y += 5;
+    const mark = (b.checked ? "[x] " : "[ ] ");
+    const tail = "  -  " + (b.checked ? T.yes : T.no);
+    const lines = doc.splitTextToSize(mark + b.nextElementSibling.textContent + tail, W);
+    lines.forEach(l => { room(6); doc.text(l, M, y); y += 4.8; });
+    y += 1.6;
   });
 
   y += 4; room(30);
@@ -448,7 +466,7 @@ $("send").onclick = () => {
   }
 
   const safe = name.replace(/[^\\p{L}\\p{N} _-]/gu, "").trim().replace(/\\s+/g, "-") || "x";
-  doc.save(PDFNAME + "-" + safe + ".pdf");
+  doc.save(T.pdfName + "-" + safe + ".pdf");
 
   $("done").textContent = T.done;
   $("done").hidden = false;
@@ -465,23 +483,18 @@ gsig.size();
 """
 
 
-def build(spec):
-    text = json.dumps(spec["t"], ensure_ascii=False, indent=2)
+def build():
     html = (TEMPLATE
-            .replace("__LANG__", spec["lang"])
-            .replace("__TITLE__", spec["t"]["title"])
-            .replace("__EDITHEADER__", spec["editheader"])
-            .replace("__EDITEND__", spec["editend"])
-            .replace("__TEXT__", text)
-            .replace("__PDFNAME__", spec["pdfname"])
+            .replace("__EDITHEADER__", EDIT_HEADER)
+            .replace("__EDITEND__", EDIT_END)
+            .replace("__TEXT__", json.dumps(TEXT, ensure_ascii=False, indent=2))
             .replace("__JSPDF__", JSPDF))
 
-    out = os.path.join(HERE, "dist", spec["file"])
+    out = os.path.join(HERE, "dist", OUTFILE)
     os.makedirs(os.path.dirname(out), exist_ok=True)
     with io.open(out, "w", encoding="utf-8") as h:
         h.write(html)
-    print("%-26s %6.0f KB" % (spec["file"], os.path.getsize(out) / 1024))
+    print("%-26s %6.0f KB" % (OUTFILE, os.path.getsize(out) / 1024))
 
 
-for spec in (DA, EN):
-    build(spec)
+build()
