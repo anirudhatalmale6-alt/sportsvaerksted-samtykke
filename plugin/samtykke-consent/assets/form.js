@@ -56,6 +56,7 @@
     // stray text node is how four of these came out blank last time.
     [["hUses", "hUses"], ["usesHelp", "usesHelp"], ["hYou", "hYou"],
      ["lName", "name"], ["lBirth", "birth"], ["lEmail", "email"], ["lPhone", "phone"],
+     ["lToday", "today"],
      ["hGuardian", "hGuardian"], ["guardianWhy", "guardianWhy"],
      ["lGName", "gname"], ["lGRel", "grel"],
      ["hSign", "hSign"], ["signHelp", "signHelp"],
@@ -211,7 +212,8 @@
     [T.name + ": " + name,
      T.birth + ": " + ($("birth").value || "-"),
      T.email + ": " + ($("email").value.trim() || "-"),
-     T.phone + ": " + ($("phone").value.trim() || "-")
+     T.phone + ": " + ($("phone").value.trim() || "-"),
+     T.today + ": " + ($("today").value || "-")
     ].forEach(function (l) { room(6); doc.text(l, M, y); y += 5; });
 
     y += 3;
@@ -278,6 +280,7 @@
     var guardianStarted = $("gname").value.trim() !== "" || gsig.inked;
 
     if (!name) { return fail(T.errName); }
+    if (!$("today").value) { return fail(T.errToday); }
     if (!main || !main.checked) { return fail(T.errUse); }
     if (!sig.inked) { return fail(T.errSign); }
     if (!$("agree").checked) { return fail(T.errAgree); }

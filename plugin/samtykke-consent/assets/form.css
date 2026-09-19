@@ -25,7 +25,14 @@
 .samtykke-two > * { flex: 1 1 220px; }
 
 .samtykke-f { display: block; margin: 0 0 14px; }
-.samtykke-lab { display: block; margin: 0 0 4px; }
+.samtykke-lab {
+  display: block;
+  margin: 0 0 4px;
+  /* His colour, set on the wrapper as --samtykke-label and changeable in the
+     settings screen. !important because the theme colours these through an
+     id-carrying selector, exactly as it did the buttons. */
+  color: var(--samtykke-label, inherit) !important;
+}
 .samtykke-f input {
   display: block; width: 100%; padding: 10px 12px;
   border: 1px solid rgba(128, 128, 128, .5); border-radius: 6px;
@@ -43,13 +50,19 @@
 .samtykke-pad {
   display: block; width: 100%; height: 170px;
   border: 1px dashed rgba(128, 128, 128, .6); border-radius: 8px;
-  background: rgba(255, 255, 255, .55);
+  /* Solid white, not 55% white. Over a dark page the old value read as grey,
+     which is what he saw - and a signature belongs on paper-white anyway. */
+  background: #ffffff !important;
   touch-action: none;   /* or a finger scrolls the page instead of drawing */
 }
 .samtykke-padrow {
   display: flex; justify-content: space-between; align-items: center;
   gap: 10px; margin: 6px 0 14px;
 }
+/* Only the hint text takes the colour. Putting it on the row made the "clear"
+   button inherit it too - gold on white is 2.1:1, which is unreadable on a
+   light background even though it looks fine on his dark one. */
+.samtykke-padrow span { color: var(--samtykke-label, inherit) !important; }
 
 /* Buttons.
 

@@ -8,7 +8,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 ?>
-<div class="samtykke" id="samtykke">
+<div class="samtykke" id="samtykke" style="--samtykke-label: <?php echo esc_attr(samtykke_get('label_color')); ?>;">
 
   <div class="samtykke-lang">
     <button type="button" class="samtykke-langbtn" data-lang="da" aria-pressed="true">Dansk</button>
@@ -37,6 +37,10 @@ if (!defined('ABSPATH')) {
     <div class="samtykke-two">
       <label class="samtykke-f"><span class="samtykke-lab" id="sam-lEmail"></span><input type="email" id="sam-email" autocomplete="email"></label>
       <label class="samtykke-f"><span class="samtykke-lab" id="sam-lPhone"></span><input type="tel" id="sam-phone" autocomplete="tel"></label>
+    </div>
+    <div class="samtykke-two">
+      <label class="samtykke-f"><span class="samtykke-lab" id="sam-lToday"></span><input type="date" id="sam-today"></label>
+      <span></span>
     </div>
   </div>
 
