@@ -1,8 +1,8 @@
 <?php
 /**
- * Plugin Name: Samtykke - film og billeder
- * Description: Samtykkeerklæring til brug af film og billeder. Sæt kortkoden [samtykke] ind på en side. PDF'en sendes med e-mail og gemmes ikke på serveren.
- * Version:     1.0.3
+ * Plugin Name: Sportsvaerksted Consent form DK EN
+ * Description: Samtykkeerklæring til brug af film og billeder, dansk og engelsk. Sæt kortkoden [consent] ind på en side. PDF'en sendes med e-mail og gemmes ikke på serveren.
+ * Version:     1.1.0
  * Author:      Anirudha Talmale
  * Text Domain: samtykke-consent
  */
@@ -11,7 +11,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('SAMTYKKE_VERSION', '1.0.3');
+define('SAMTYKKE_VERSION', '1.1.0');
 define('SAMTYKKE_DIR', plugin_dir_path(__FILE__));
 define('SAMTYKKE_URL', plugin_dir_url(__FILE__));
 define('SAMTYKKE_OPTION', 'samtykke_settings');
@@ -193,6 +193,9 @@ function samtykke_shortcode($atts) {
 
     return ob_get_clean();
 }
+add_shortcode('consent', 'samtykke_shortcode');
+// The old name still works. His live page already says [samtykke], and a
+// rename that breaks the page it is on is not a rename, it is an outage.
 add_shortcode('samtykke', 'samtykke_shortcode');
 
 // ------------------------------------------------------------- the sending
@@ -281,7 +284,7 @@ add_action('wp_ajax_nopriv_samtykke_send', 'samtykke_handle');
 // ------------------------------------------------------------- settings UI
 
 function samtykke_settings_menu() {
-    add_options_page('Samtykke', 'Samtykke', 'manage_options', 'samtykke', 'samtykke_settings_page');
+    add_options_page('Consent form DK EN', 'Consent form', 'manage_options', 'samtykke', 'samtykke_settings_page');
 }
 add_action('admin_menu', 'samtykke_settings_menu');
 
@@ -351,10 +354,11 @@ function samtykke_settings_page() {
     }
     ?>
     <div class="wrap">
-      <h1>Samtykke</h1>
+      <h1>Sportsvaerksted Consent form DK EN</h1>
 
-      <p>Sæt kortkoden <code>[samtykke]</code> ind på en side for den danske udgave,
-         og <code>[samtykke lang="en"]</code> for den engelske.</p>
+      <p>Sæt kortkoden <code>[consent]</code> ind på en side for den danske udgave,
+         og <code>[consent lang="en"]</code> for den engelske.
+         <br>Den gamle kortkode <code>[samtykke]</code> virker stadig.</p>
       <p>Erklæringen sendes med e-mail og <strong>gemmes ikke</strong> på hjemmesiden.</p>
 
       <form method="post" action="options.php">
