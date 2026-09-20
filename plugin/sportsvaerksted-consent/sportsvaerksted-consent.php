@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Sportsvaerksted Consent form DK EN
  * Description: Samtykkeerklæring til brug af film og billeder, dansk og engelsk. Sæt kortkoden [consent] ind på en side. PDF'en sendes med e-mail og gemmes ikke på serveren.
- * Version:     1.1.2
+ * Version:     1.1.3
  * Author:      Anirudha Talmale
  * Text Domain: samtykke-consent
  */
@@ -11,7 +11,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('SAMTYKKE_VERSION', '1.1.2');
+define('SAMTYKKE_VERSION', '1.1.3');
 define('SAMTYKKE_DIR', plugin_dir_path(__FILE__));
 define('SAMTYKKE_URL', plugin_dir_url(__FILE__));
 define('SAMTYKKE_OPTION', 'samtykke_settings');
@@ -211,19 +211,46 @@ add_shortcode('samtykke', 'samtykke_shortcode');
  * held one for days. Some responses from the host came back WITHOUT a
  * no-store header, which is all it takes.
  */
-function samtykke_no_cache() {
+function samtykke_page_has_form() {
     if (!is_singular()) {
-        return;
+        return false;
     }
 
     $post = get_post();
 
     if (!$post instanceof WP_Post) {
+        return false;
+    }
+
+    return has_shortcode($post->post_content, 'consent')
+        || has_shortcode($post->post_content, 'samtykke');
+}
+
+/**
+ * Tell caching plugins to leave this page alone.
+ *
+ * W3 Total Cache, WP Super Cache, LiteSpeed and the rest all look for these
+ * constants. It reinstalled itself on his site during an automatic "clean up"
+ * and served a stored copy of the page for days, so the form has to defend
+ * itself rather than rely on anyone remembering to exclude it.
+ *
+ * Runs on 'wp', which is early enough that the cache has not decided yet.
+ */
+function samtykke_do_not_cache() {
+    if (!samtykke_page_has_form()) {
         return;
     }
 
-    if (!has_shortcode($post->post_content, 'consent')
-        && !has_shortcode($post->post_content, 'samtykke')) {
+    foreach (array('DONOTCACHEPAGE', 'DONOTCACHEOBJECT', 'DONOTCACHEDB', 'DONOTMINIFY') as $flag) {
+        if (!defined($flag)) {
+            define($flag, true);
+        }
+    }
+}
+add_action('wp', 'samtykke_do_not_cache');
+
+function samtykke_no_cache() {
+    if (!samtykke_page_has_form()) {
         return;
     }
 
