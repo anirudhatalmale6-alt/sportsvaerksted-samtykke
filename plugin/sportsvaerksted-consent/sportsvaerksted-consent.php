@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Sportsvaerksted Consent form DK EN
  * Description: Samtykkeerklæring til brug af film og billeder, dansk og engelsk. Sæt kortkoden [consent] ind på en side. PDF'en sendes med e-mail og gemmes ikke på serveren.
- * Version:     1.1.3
+ * Version:     1.2.0
  * Author:      Anirudha Talmale
  * Text Domain: samtykke-consent
  */
@@ -11,7 +11,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('SAMTYKKE_VERSION', '1.1.3');
+define('SAMTYKKE_VERSION', '1.2.0');
 define('SAMTYKKE_DIR', plugin_dir_path(__FILE__));
 define('SAMTYKKE_URL', plugin_dir_url(__FILE__));
 define('SAMTYKKE_OPTION', 'samtykke_settings');
@@ -34,6 +34,19 @@ function samtykke_defaults() {
         // the complaint.
         'text_color'     => '#ffffff',
         'saved_at'       => '',
+
+        // Sending through the host's own SMTP server is what makes the mail
+        // pass SPF and DMARC. sportsvaerksted.com publishes
+        // "v=spf1 include:spf.simply.com -all" and "p=reject", so anything
+        // PHP posts straight from the web server is refused outright by
+        // Yahoo and the like.
+        'smtp_on'   => 0,
+        'smtp_host' => 'websmtp.simply.com',
+        'smtp_port' => '587',
+        'smtp_secure' => 'tls',
+        'smtp_user' => '',
+        'smtp_pass' => '',
+        'from_name' => 'Sportsvaerksted',
 
         'da_title'   => 'Samtykke til brug af film og billeder',
         'da_who'     => 'Dataansvarlig: Sportsværkstedet, Domhusgade 13, 1. sal, 6000 Kolding  ·  skriv@sportsvaerkstedet.dk',
@@ -265,6 +278,75 @@ add_action('template_redirect', 'samtykke_no_cache');
 
 // ------------------------------------------------------------- the sending
 
+/**
+ * Route this plugin's mail through the host's SMTP server.
+ *
+ * Deliberately scoped to our own sending with a flag rather than hooked for
+ * the whole site: taking over every email a site sends is not something a
+ * consent form should do behind the owner's back.
+ */
+$GLOBALS['samtykke_sending'] = false;
+
+function samtykke_phpmailer($phpmailer) {
+    if (empty($GLOBALS['samtykke_sending']) || !samtykke_get('smtp_on')) {
+        return;
+    }
+
+    $user = samtykke_get('smtp_user');
+    $host = samtykke_get('smtp_host');
+
+    if (!$user || !$host) {
+        return;
+    }
+
+    $phpmailer->isSMTP();
+    $phpmailer->Host = $host;
+    $phpmailer->Port = (int) samtykke_get('smtp_port');
+    $phpmailer->SMTPAuth = true;
+    $phpmailer->Username = $user;
+    $phpmailer->Password = samtykke_get('smtp_pass');
+
+    $secure = samtykke_get('smtp_secure');
+
+    if ($secure === 'ssl' || $secure === 'tls') {
+        $phpmailer->SMTPSecure = $secure;
+    } else {
+        $phpmailer->SMTPSecure = '';
+        $phpmailer->SMTPAutoTLS = false;
+    }
+
+    // DMARC aligns on the From domain, so the From address has to be the
+    // mailbox we authenticated as - not WordPress's invented wordpress@domain.
+    $phpmailer->setFrom($user, samtykke_get('from_name'), false);
+}
+add_action('phpmailer_init', 'samtykke_phpmailer');
+
+
+/** Send as this plugin: turns the SMTP routing on for one call. */
+function samtykke_send_mail($to, $subject, $body, $attachments = array()) {
+    $headers = array('Content-Type: text/plain; charset=UTF-8');
+    $user = samtykke_get('smtp_user');
+
+    if (samtykke_get('smtp_on') && $user) {
+        $headers[] = sprintf('From: %s <%s>', samtykke_get('from_name'), $user);
+    }
+
+    $failure = '';
+    $catch = function ($error) use (&$failure) {
+        $failure = $error->get_error_message();
+    };
+    add_action('wp_mail_failed', $catch);
+
+    $GLOBALS['samtykke_sending'] = true;
+    $sent = wp_mail($to, $subject, $body, $headers, $attachments);
+    $GLOBALS['samtykke_sending'] = false;
+
+    remove_action('wp_mail_failed', $catch);
+
+    return array($sent, $failure);
+}
+
+
 function samtykke_handle() {
     check_ajax_referer('samtykke_send', 'nonce');
 
@@ -323,14 +405,13 @@ function samtykke_handle() {
 
     $to = samtykke_get('to_email');
     $subject = sprintf($s['mailSubject'], $name);
-    $headers = array('Content-Type: text/plain; charset=UTF-8');
 
-    $sent = wp_mail($to, $subject, sprintf($s['mailBody'], $name), $headers, array($file));
+    list($sent, $why) = samtykke_send_mail($to, $subject, sprintf($s['mailBody'], $name), array($file));
 
     $copied = false;
 
     if (samtykke_get('copy_to_signer') && is_email($email)) {
-        $copied = wp_mail($email, $subject, $s['mailBodySigner'], $headers, array($file));
+        list($copied, ) = samtykke_send_mail($email, $subject, $s['mailBodySigner'], array($file));
     }
 
     // Nothing is kept. The promise made on the form is that the website stores
@@ -338,13 +419,41 @@ function samtykke_handle() {
     @unlink($file);
 
     if (!$sent) {
-        wp_send_json_error(array('message' => 'mail failed'), 500);
+        wp_send_json_error(array('message' => $why ? $why : 'mail failed'), 500);
     }
 
     wp_send_json_success(array('sent' => true, 'copied' => (bool) $copied));
 }
 add_action('wp_ajax_samtykke_send', 'samtykke_handle');
 add_action('wp_ajax_nopriv_samtykke_send', 'samtykke_handle');
+
+/** "Send a test" - the only way to know the mail really arrives. */
+function samtykke_test_mail() {
+    if (!current_user_can('manage_options')) {
+        wp_die('nope');
+    }
+
+    check_admin_referer('samtykke_test');
+
+    $to = samtykke_get('to_email');
+
+    list($sent, $why) = samtykke_send_mail(
+        $to,
+        'Test fra samtykkeformularen',
+        "Det her er en testmail fra samtykkeformularen på " . home_url() . ".\n\n"
+        . "Kommer den frem, virker udsendelsen. Kommer den i spam, så marker den som 'ikke spam'."
+    );
+
+    $args = array('page' => 'samtykke', 'samtykke_test' => $sent ? 'ok' : 'fail');
+
+    if (!$sent && $why) {
+        $args['samtykke_why'] = rawurlencode(substr($why, 0, 200));
+    }
+
+    wp_safe_redirect(add_query_arg($args, admin_url('options-general.php')));
+    exit;
+}
+add_action('admin_post_samtykke_test', 'samtykke_test_mail');
 
 // ------------------------------------------------------------- settings UI
 
@@ -377,7 +486,8 @@ function samtykke_sanitize($input) {
     // labelled as cosmetic.
     if (!empty($input['restore_defaults'])) {
         $saved = get_option(SAMTYKKE_OPTION, array());
-        $keep = array('to_email', 'copy_to_signer');
+        $keep = array('to_email', 'copy_to_signer', 'smtp_on', 'smtp_host', 'smtp_port',
+                      'smtp_secure', 'smtp_user', 'smtp_pass', 'from_name');
 
         foreach ($keep as $key) {
             if (array_key_exists($key, $saved)) {
@@ -398,6 +508,23 @@ function samtykke_sanitize($input) {
 
         if ($key === 'copy_to_signer') {
             $out[$key] = empty($input[$key]) ? 0 : 1;
+            continue;
+        }
+
+        if ($key === 'smtp_on') {
+            $out[$key] = empty($input[$key]) ? 0 : 1;
+            continue;
+        }
+
+        if ($key === 'smtp_pass') {
+            // Kept as typed - a password may contain anything, and sanitising
+            // it would silently break the login.
+            $out[$key] = isset($input[$key]) ? (string) $input[$key] : '';
+            continue;
+        }
+
+        if ($key === 'smtp_user') {
+            $out[$key] = sanitize_email(isset($input[$key]) ? $input[$key] : '');
             continue;
         }
 
@@ -454,6 +581,21 @@ function samtykke_settings_page() {
     <div class="wrap">
       <h1>Sportsvaerksted Consent form DK EN</h1>
 
+      <?php if (isset($_GET['samtykke_test'])) : ?>
+        <?php if ($_GET['samtykke_test'] === 'ok') : ?>
+          <div class="notice notice-success"><p>
+            Testmailen er sendt. Kig i indbakken - og i spamfilteret.
+          </p></div>
+        <?php else : ?>
+          <div class="notice notice-error"><p>
+            Testmailen kunne ikke sendes.
+            <?php if (!empty($_GET['samtykke_why'])) : ?>
+              <br><code><?php echo esc_html(rawurldecode(wp_unslash($_GET['samtykke_why']))); ?></code>
+            <?php endif; ?>
+          </p></div>
+        <?php endif; ?>
+      <?php endif; ?>
+
       <p>Sæt kortkoden <code>[consent]</code> ind på en side for den danske udgave,
          og <code>[consent lang="en"]</code> for den engelske.
          <br>Den gamle kortkode <code>[samtykke]</code> virker stadig.</p>
@@ -484,6 +626,55 @@ function samtykke_settings_page() {
               </label>
             </td>
           </tr>
+        </table>
+
+        <h2>Afsendelse (SMTP)</h2>
+        <p class="description" style="max-width:40em">
+          Uden det her sender WordPress mailen direkte fra webserveren. Domæner med
+          en streng DMARC-regel - som sportsvaerksted.com - får den afvist af bl.a.
+          Yahoo, Gmail og Outlook. Log ind på husets mailserver, så kommer den igennem.
+        </p>
+        <table class="form-table" role="presentation">
+          <tr>
+            <th scope="row">Send via SMTP</th>
+            <td>
+              <label>
+                <input type="checkbox" name="<?php echo esc_attr(SAMTYKKE_OPTION); ?>[smtp_on]"
+                       value="1" <?php checked(samtykke_get('smtp_on'), 1); ?>>
+                Ja tak
+              </label>
+            </td>
+          </tr>
+          <?php
+            samtykke_field('smtp_host', 'Server', 0, 'Hos Simply.com: websmtp.simply.com');
+            samtykke_field('smtp_port', 'Port', 0, '587 med TLS, eller 465 med SSL.');
+          ?>
+          <tr>
+            <th scope="row"><label for="smtp_secure">Kryptering</label></th>
+            <td>
+              <select id="smtp_secure" name="<?php echo esc_attr(SAMTYKKE_OPTION); ?>[smtp_secure]">
+                <?php foreach (array('tls' => 'TLS (port 587)', 'ssl' => 'SSL (port 465)', '' => 'Ingen') as $k => $label) : ?>
+                  <option value="<?php echo esc_attr($k); ?>" <?php selected(samtykke_get('smtp_secure'), $k); ?>>
+                    <?php echo esc_html($label); ?>
+                  </option>
+                <?php endforeach; ?>
+              </select>
+            </td>
+          </tr>
+          <?php
+            samtykke_field('smtp_user', 'Brugernavn', 0,
+              'Den fulde mailadresse, fx skriv@sportsvaerksted.com. Mailen bliver også sendt FRA den adresse - det er dét, der gør, at den ikke bliver afvist.');
+          ?>
+          <tr>
+            <th scope="row"><label for="smtp_pass">Adgangskode</label></th>
+            <td>
+              <input id="smtp_pass" type="password" class="large-text" autocomplete="new-password"
+                     name="<?php echo esc_attr(SAMTYKKE_OPTION); ?>[smtp_pass]"
+                     value="<?php echo esc_attr(samtykke_get('smtp_pass')); ?>">
+              <p class="description">Adgangskoden til den mailkonto. Den gemmes i databasen, ligesom i alle andre SMTP-plugins.</p>
+            </td>
+          </tr>
+          <?php samtykke_field('from_name', 'Afsendernavn'); ?>
         </table>
 
         <h2>Udseende</h2>
@@ -547,6 +738,15 @@ function samtykke_settings_page() {
         </table>
 
         <?php submit_button(); ?>
+      </form>
+
+      <h2>Test</h2>
+      <p>Send en testmail til <strong><?php echo esc_html(samtykke_get('to_email')); ?></strong>
+         og se, om den kommer frem. Gem dine indstillinger først.</p>
+      <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+        <input type="hidden" name="action" value="samtykke_test">
+        <?php wp_nonce_field('samtykke_test'); ?>
+        <?php submit_button('Send testmail', 'secondary', 'submit', false); ?>
       </form>
     </div>
     <?php
