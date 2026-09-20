@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Sportsvaerksted Consent form DK EN
  * Description: Samtykkeerklæring til brug af film og billeder, dansk og engelsk. Sæt kortkoden [consent] ind på en side. PDF'en sendes med e-mail og gemmes ikke på serveren.
- * Version:     1.1.1
+ * Version:     1.1.2
  * Author:      Anirudha Talmale
  * Text Domain: samtykke-consent
  */
@@ -11,7 +11,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('SAMTYKKE_VERSION', '1.1.1');
+define('SAMTYKKE_VERSION', '1.1.2');
 define('SAMTYKKE_DIR', plugin_dir_path(__FILE__));
 define('SAMTYKKE_URL', plugin_dir_url(__FILE__));
 define('SAMTYKKE_OPTION', 'samtykke_settings');
@@ -203,6 +203,39 @@ add_shortcode('consent', 'samtykke_shortcode');
 // rename that breaks the page it is on is not a rename, it is an outage.
 add_shortcode('samtykke', 'samtykke_shortcode');
 
+/**
+ * Never let a page carrying this form be cached.
+ *
+ * The wording lives in the page's own HTML, so a stale copy shows yesterday's
+ * text and looks exactly like a save that did not work. His Android browser
+ * held one for days. Some responses from the host came back WITHOUT a
+ * no-store header, which is all it takes.
+ */
+function samtykke_no_cache() {
+    if (!is_singular()) {
+        return;
+    }
+
+    $post = get_post();
+
+    if (!$post instanceof WP_Post) {
+        return;
+    }
+
+    if (!has_shortcode($post->post_content, 'consent')
+        && !has_shortcode($post->post_content, 'samtykke')) {
+        return;
+    }
+
+    nocache_headers();
+
+    if (!headers_sent()) {
+        header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0', true);
+        header('Pragma: no-cache', true);
+    }
+}
+add_action('template_redirect', 'samtykke_no_cache');
+
 // ------------------------------------------------------------- the sending
 
 function samtykke_handle() {
@@ -312,7 +345,19 @@ function samtykke_sanitize($input) {
     $defaults = samtykke_defaults();
 
     // Since an empty field now stays empty, there has to be a road back.
+    // The tick box promises "texts and colours", so it must NOT throw away his
+    // email address with them - that would be a nasty surprise from a button
+    // labelled as cosmetic.
     if (!empty($input['restore_defaults'])) {
+        $saved = get_option(SAMTYKKE_OPTION, array());
+        $keep = array('to_email', 'copy_to_signer');
+
+        foreach ($keep as $key) {
+            if (array_key_exists($key, $saved)) {
+                $defaults[$key] = $saved[$key];
+            }
+        }
+
         $defaults['saved_at'] = current_time('d-m-Y H:i');
 
         return $defaults;
