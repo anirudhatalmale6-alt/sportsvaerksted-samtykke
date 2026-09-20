@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Sportsvaerksted Consent form DK EN
  * Description: Samtykkeerklæring til brug af film og billeder, dansk og engelsk. Sæt kortkoden [consent] ind på en side. PDF'en sendes med e-mail og gemmes ikke på serveren.
- * Version:     1.2.0
+ * Version:     1.2.1
  * Author:      Anirudha Talmale
  * Text Domain: samtykke-consent
  */
@@ -11,7 +11,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('SAMTYKKE_VERSION', '1.2.0');
+define('SAMTYKKE_VERSION', '1.2.1');
 define('SAMTYKKE_DIR', plugin_dir_path(__FILE__));
 define('SAMTYKKE_URL', plugin_dir_url(__FILE__));
 define('SAMTYKKE_OPTION', 'samtykke_settings');
@@ -454,6 +454,52 @@ function samtykke_test_mail() {
     exit;
 }
 add_action('admin_post_samtykke_test', 'samtykke_test_mail');
+
+/**
+ * Is sending actually set up?
+ *
+ * Two sites, and only one of them got configured - the other kept posting
+ * mail straight from the web server until Gmail refused it. Silence is no
+ * good here: the form says "sent" to the person signing either way.
+ */
+function samtykke_mail_trouble() {
+    if (!samtykke_get('smtp_on')) {
+        return 'off';
+    }
+
+    if (!samtykke_get('smtp_user') || !samtykke_get('smtp_pass') || !samtykke_get('smtp_host')) {
+        return 'half';
+    }
+
+    return '';
+}
+
+
+/** Say so on every admin screen, not only on ours - it is easy to miss. */
+function samtykke_admin_warning() {
+    if (!current_user_can('manage_options')) {
+        return;
+    }
+
+    $trouble = samtykke_mail_trouble();
+
+    if (!$trouble) {
+        return;
+    }
+
+    $where = admin_url('options-general.php?page=samtykke');
+
+    $message = ($trouble === 'off')
+        ? 'Samtykkeformularen sender mail direkte fra webserveren. Gmail, Yahoo og Outlook afviser eller spamfiltrerer den slags. Sæt SMTP op, så kommer erklæringerne frem.'
+        : 'Samtykkeformularen er sat til at sende via SMTP, men der mangler oplysninger. Mailen sendes derfor stadig direkte fra webserveren.';
+
+    printf(
+        '<div class="notice notice-warning"><p><strong>Samtykke:</strong> %s <a href="%s">Ret det her</a>.</p></div>',
+        esc_html($message),
+        esc_url($where)
+    );
+}
+add_action('admin_notices', 'samtykke_admin_warning');
 
 // ------------------------------------------------------------- settings UI
 
