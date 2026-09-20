@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Sportsvaerksted Consent form DK EN
  * Description: Samtykkeerklæring til brug af film og billeder, dansk og engelsk. Sæt kortkoden [consent] ind på en side. PDF'en sendes med e-mail og gemmes ikke på serveren.
- * Version:     1.1.0
+ * Version:     1.1.1
  * Author:      Anirudha Talmale
  * Text Domain: samtykke-consent
  */
@@ -11,7 +11,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('SAMTYKKE_VERSION', '1.1.0');
+define('SAMTYKKE_VERSION', '1.1.1');
 define('SAMTYKKE_DIR', plugin_dir_path(__FILE__));
 define('SAMTYKKE_URL', plugin_dir_url(__FILE__));
 define('SAMTYKKE_OPTION', 'samtykke_settings');
@@ -33,6 +33,7 @@ function samtykke_defaults() {
         // sign-field text, the small print. Grey on his near-black page was
         // the complaint.
         'text_color'     => '#ffffff',
+        'saved_at'       => '',
 
         'da_title'   => 'Samtykke til brug af film og billeder',
         'da_who'     => 'Dataansvarlig: Sportsværkstedet, Domhusgade 13, 1. sal, 6000 Kolding  ·  skriv@sportsvaerkstedet.dk',
@@ -62,7 +63,11 @@ function samtykke_get($key) {
     $saved = get_option(SAMTYKKE_OPTION, array());
     $defaults = samtykke_defaults();
 
-    if (isset($saved[$key]) && $saved[$key] !== '') {
+    // A saved EMPTY field is a decision, not a missing value. The old version
+    // treated '' as "nothing saved" and handed back the built-in text, so
+    // clearing a sentence made my wording reappear - which is exactly what
+    // "it shows the pre-programmed version" meant.
+    if (array_key_exists($key, $saved)) {
         return $saved[$key];
     }
 
@@ -296,9 +301,22 @@ function samtykke_settings_register() {
 }
 add_action('admin_init', 'samtykke_settings_register');
 
+/** The fields rendered as textareas - they must keep their line breaks. */
+function samtykke_multiline_keys() {
+    return array('da_terms', 'en_terms', 'da_use', 'en_use', 'da_name_ok', 'en_name_ok');
+}
+
+
 function samtykke_sanitize($input) {
     $out = array();
     $defaults = samtykke_defaults();
+
+    // Since an empty field now stays empty, there has to be a road back.
+    if (!empty($input['restore_defaults'])) {
+        $defaults['saved_at'] = current_time('d-m-Y H:i');
+
+        return $defaults;
+    }
 
     foreach ($defaults as $key => $default) {
         if ($key === 'to_email') {
@@ -318,10 +336,18 @@ function samtykke_sanitize($input) {
         }
 
         $value = isset($input[$key]) ? (string) $input[$key] : '';
-        // Multi-line fields keep their line breaks; the rest are single lines.
-        $out[$key] = (strpos($key, '_terms') !== false)
-            ? sanitize_textarea_field($value)
-            : sanitize_text_field($value);
+        // Every field shown as a textarea keeps its line breaks. The tick
+        // labels are textareas too, and sanitize_text_field was flattening a
+        // deliberate line break into a space.
+        if (in_array($key, samtykke_multiline_keys(), true)) {
+            // Browsers post CRLF. A stray \r reaches jsPDF and can draw as a
+            // box glyph in the finished PDF, so normalise it here, once.
+            $out[$key] = str_replace("\r\n", "\n", sanitize_textarea_field($value));
+            $out[$key] = str_replace("\r", "\n", $out[$key]);
+            continue;
+        }
+
+        $out[$key] = sanitize_text_field($value);
     }
 
     return $out;
@@ -360,6 +386,12 @@ function samtykke_settings_page() {
          og <code>[consent lang="en"]</code> for den engelske.
          <br>Den gamle kortkode <code>[samtykke]</code> virker stadig.</p>
       <p>Erklæringen sendes med e-mail og <strong>gemmes ikke</strong> på hjemmesiden.</p>
+
+      <p><strong>Version <?php echo esc_html(SAMTYKKE_VERSION); ?></strong><?php
+        $when = samtykke_get('saved_at');
+        echo $when ? ' &middot; dine indstillinger blev gemt ' . esc_html($when)
+                   : ' &middot; du har ikke gemt noget endnu, så teksten herunder er standardteksten.';
+      ?></p>
 
       <form method="post" action="options.php">
         <?php settings_fields('samtykke_group'); ?>
@@ -426,6 +458,20 @@ function samtykke_settings_page() {
             samtykke_field('en_use', 'Tick box: permission', 3);
             samtykke_field('en_name_ok', 'Tick box: first name', 2);
           ?>
+        </table>
+
+        <h2>Nulstil</h2>
+        <table class="form-table" role="presentation">
+          <tr>
+            <th scope="row">Standardtekst</th>
+            <td>
+              <label>
+                <input type="checkbox" name="<?php echo esc_attr(SAMTYKKE_OPTION); ?>[restore_defaults]" value="1">
+                Sæt alle tekster og farver tilbage til standard, når jeg gemmer
+              </label>
+              <p class="description">Sletter dine egne rettelser. Kan ikke fortrydes.</p>
+            </td>
+          </tr>
         </table>
 
         <?php submit_button(); ?>
