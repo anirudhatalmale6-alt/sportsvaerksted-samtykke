@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Sportsvaerksted Consent form DK EN
  * Description: Samtykkeerklæring til brug af film og billeder, dansk og engelsk. Sæt kortkoden [consent] ind på en side. PDF'en sendes med e-mail og gemmes ikke på serveren.
- * Version:     1.2.1
+ * Version:     1.2.2
  * Author:      Anirudha Talmale
  * Text Domain: samtykke-consent
  */
@@ -11,7 +11,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('SAMTYKKE_VERSION', '1.2.1');
+define('SAMTYKKE_VERSION', '1.2.2');
 define('SAMTYKKE_DIR', plugin_dir_path(__FILE__));
 define('SAMTYKKE_URL', plugin_dir_url(__FILE__));
 define('SAMTYKKE_OPTION', 'samtykke_settings');
@@ -435,7 +435,15 @@ function samtykke_test_mail() {
 
     check_admin_referer('samtykke_test');
 
-    $to = samtykke_get('to_email');
+    // Aimable on purpose. Sending a test to a mailbox on the same host never
+    // leaves the building and arrives however broken the authentication is -
+    // which is exactly how a real client's copy went missing while the
+    // owner's arrived. The address that matters is one at Gmail.
+    $to = isset($_POST['samtykke_test_to']) ? sanitize_email(wp_unslash($_POST['samtykke_test_to'])) : '';
+
+    if (!is_email($to)) {
+        $to = samtykke_get('to_email');
+    }
 
     list($sent, $why) = samtykke_send_mail(
         $to,
@@ -444,7 +452,11 @@ function samtykke_test_mail() {
         . "Kommer den frem, virker udsendelsen. Kommer den i spam, så marker den som 'ikke spam'."
     );
 
-    $args = array('page' => 'samtykke', 'samtykke_test' => $sent ? 'ok' : 'fail');
+    $args = array(
+        'page' => 'samtykke',
+        'samtykke_test' => $sent ? 'ok' : 'fail',
+        'samtykke_to' => rawurlencode($to),
+    );
 
     if (!$sent && $why) {
         $args['samtykke_why'] = rawurlencode(substr($why, 0, 200));
@@ -630,7 +642,10 @@ function samtykke_settings_page() {
       <?php if (isset($_GET['samtykke_test'])) : ?>
         <?php if ($_GET['samtykke_test'] === 'ok') : ?>
           <div class="notice notice-success"><p>
-            Testmailen er sendt. Kig i indbakken - og i spamfilteret.
+            Testmailen er sendt til
+            <strong><?php echo esc_html(rawurldecode(wp_unslash($_GET['samtykke_to'] ?? ''))); ?></strong>.
+            Kig i indbakken - og i spamfilteret. Kommer den ikke frem inden for et par minutter,
+            er afsendelsen stadig ikke i orden.
           </p></div>
         <?php else : ?>
           <div class="notice notice-error"><p>
@@ -787,12 +802,17 @@ function samtykke_settings_page() {
       </form>
 
       <h2>Test</h2>
-      <p>Send en testmail til <strong><?php echo esc_html(samtykke_get('to_email')); ?></strong>
-         og se, om den kommer frem. Gem dine indstillinger først.</p>
+      <p><strong>Test til en Gmail-adresse</strong> - ikke til en af dine egne adresser hos Simply.
+         Mail til dit eget hus kommer altid frem, også når afsendelsen er forkert opsat. Det var
+         præcis sådan, en klients kopi forsvandt uden at nogen opdagede det.</p>
       <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
         <input type="hidden" name="action" value="samtykke_test">
         <?php wp_nonce_field('samtykke_test'); ?>
+        <input type="email" name="samtykke_test_to" class="regular-text"
+               placeholder="din-adresse@gmail.com"
+               value="<?php echo esc_attr(samtykke_get('to_email')); ?>">
         <?php submit_button('Send testmail', 'secondary', 'submit', false); ?>
+        <p class="description">Gem dine indstillinger først.</p>
       </form>
     </div>
     <?php
