@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Sportsvaerksted Consent form DK EN
  * Description: Samtykkeerklæring til brug af film og billeder, dansk og engelsk. Sæt kortkoden [consent] ind på en side. PDF'en sendes med e-mail og gemmes ikke på serveren.
- * Version:     1.2.2
+ * Version:     1.2.3
  * Author:      Anirudha Talmale
  * Text Domain: samtykke-consent
  */
@@ -11,7 +11,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('SAMTYKKE_VERSION', '1.2.2');
+define('SAMTYKKE_VERSION', '1.2.3');
 define('SAMTYKKE_DIR', plugin_dir_path(__FILE__));
 define('SAMTYKKE_URL', plugin_dir_url(__FILE__));
 define('SAMTYKKE_OPTION', 'samtykke_settings');
@@ -474,7 +474,42 @@ add_action('admin_post_samtykke_test', 'samtykke_test_mail');
  * mail straight from the web server until Gmail refused it. Silence is no
  * good here: the form says "sent" to the person signing either way.
  */
+/**
+ * Is another plugin already sending the whole site's mail properly?
+ *
+ * If so our own SMTP box should be left switched off - one place for the
+ * password - and the warning below must stay quiet. A warning that cries wolf
+ * is worse than none, because it teaches the owner to ignore the next one.
+ */
+function samtykke_site_wide_smtp() {
+    $signs = array(
+        'WPMailSMTP\\Core',        // WP Mail SMTP
+        'EasyWPSMTP\\Core',        // Easy WP SMTP
+        'PostmanSMTP',             // Post SMTP
+        'FluentMail\\Application', // FluentSMTP
+    );
+
+    foreach ($signs as $class) {
+        if (class_exists($class)) {
+            return true;
+        }
+    }
+
+    foreach (array('wp_mail_smtp', 'easy_wp_smtp', 'fluentMail') as $fn) {
+        if (function_exists($fn)) {
+            return true;
+        }
+    }
+
+    return defined('WPMS_ON') || defined('EASY_WP_SMTP_VERSION');
+}
+
+
 function samtykke_mail_trouble() {
+    if (samtykke_site_wide_smtp()) {
+        return '';
+    }
+
     if (!samtykke_get('smtp_on')) {
         return 'off';
     }
@@ -690,6 +725,13 @@ function samtykke_settings_page() {
         </table>
 
         <h2>Afsendelse (SMTP)</h2>
+        <?php if (samtykke_site_wide_smtp()) : ?>
+          <div class="notice notice-info inline"><p>
+            Der er allerede et SMTP-plugin på siden, som håndterer al mail herfra.
+            Så behøver du <strong>ikke</strong> udfylde noget herunder - lad "Send via SMTP"
+            være slået fra, så adgangskoden kun står ét sted.
+          </p></div>
+        <?php endif; ?>
         <p class="description" style="max-width:40em">
           Uden det her sender WordPress mailen direkte fra webserveren. Domæner med
           en streng DMARC-regel - som sportsvaerksted.com - får den afvist af bl.a.
